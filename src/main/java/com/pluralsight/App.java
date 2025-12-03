@@ -1,5 +1,7 @@
 package com.pluralsight;
 
+import org.apache.commons.dbcp2.BasicDataSource;
+
 import java.sql.*;
 import java.util.Scanner;
 
@@ -22,8 +24,16 @@ public class App {
         String username = args[0];
         String password = args[1];
 
+        //get the connection from the datasource
+        try(
+                //create the basic datasource
+                BasicDataSource bds = new BasicDataSource();
+                ){
 
-        try(Connection c = DriverManager.getConnection("jdbc:mysql://localhost:3306/northwind", username, password)){
+            //set the configuration
+            bds.setUrl("jdbc:mysql://localhost:3306/northwind");
+            bds.setUsername(username);
+            bds.setPassword(password);
 
             while(true){
 
@@ -37,13 +47,14 @@ public class App {
 
                 switch(scan.nextInt()){
                     case(1):
-                        displayAllProducts(c);
+                        displayAllProducts(bds);
                         break;
                     case(2):
-                        displayAllCustomers(c);
+                        displayAllCustomers(bds);
                         break;
                     case(3):
-                        displayAllCategories(c);
+                        displayAllCategories(bds);
+                        break;
                     case(0):
                         System.out.println("Bye");
                         System.exit(0);
@@ -57,9 +68,12 @@ public class App {
         }
     }
 
-    public static void displayAllCategories(Connection c){
+    public static void displayAllCategories(BasicDataSource bds){
         try(
+                //geta connection from the pool
+                Connection c = bds.getConnection();
 
+                //create the prepared statement using the passed in connection
                 PreparedStatement q = c.prepareStatement("""
                         SELECT 
                             CategoryID
@@ -80,12 +94,14 @@ public class App {
         System.out.println("Enter a CategoryID to view related products");
         int catID = scan.nextInt();
 
-        displayCategoryProducts(c , catID);
+        displayCategoryProducts(bds , catID);
     }
 
-    public static void displayCategoryProducts(Connection c, int i){
+    public static void displayCategoryProducts(BasicDataSource bds, int i){
 
         try(
+                Connection c = bds.getConnection();
+
                 PreparedStatement q = c.prepareStatement("""
                         SELECT 
                             ProductID
@@ -111,11 +127,12 @@ public class App {
         } catch (SQLException e) {
             System.out.println("Error retrieving products from category " + i);
         }
-
     }
-    public static void displayAllProducts(Connection c){
+
+    public static void displayAllProducts(BasicDataSource bds){
 
         try(
+                Connection c = bds.getConnection();
 
                 PreparedStatement q = c.prepareStatement("""
                     
@@ -138,9 +155,11 @@ public class App {
         }
     }
 
-    public static void displayAllCustomers(Connection c){
+    public static void displayAllCustomers(BasicDataSource bds){
 
         try(
+                Connection c = bds.getConnection();
+
                 PreparedStatement q = c.prepareStatement("""
                         
                         SELECT *
